@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Calendar,
   Users,
@@ -10,7 +10,6 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
-import CheifGuestPhoto from "./assets/images.jpg";
 
 const eventTypes = [
   "All",
@@ -21,9 +20,8 @@ const eventTypes = [
   "Sports",
 ];
 
-// Mock event API
-const eventAPI = {
-  events: [
+function sampleEvents() {
+  return [
     {
       id: 1,
       title: "Web Development Workshop",
@@ -48,55 +46,27 @@ const eventAPI = {
       attendees: 150,
       registeredUsers: [],
     },
-  ],
-  getAllEvents() {
-    return this.events;
-  },
-  createEvent(data) {
-    const newEvent = {
-      ...data,
-      id: this.events.length + 1,
-      attendees: 0,
-      registeredUsers: [],
-    };
-    this.events.push(newEvent);
-  },
-  updateEvent(id, data) {
-    const index = this.events.findIndex((e) => e.id === id);
-    if (index !== -1) {
-      this.events[index] = { ...this.events[index], ...data };
-    }
-  },
-  deleteEvent(id) {
-    this.events = this.events.filter((e) => e.id !== id);
-  },
-  registerAttendee(id, data) {
-    const event = this.events.find((e) => e.id === id);
-    if (event) {
-      event.registeredUsers.push(data);
-      event.attendees += 1;
-    }
-  },
-};
+  ];
+}
 
 // Event Card Component
 function EventCard({ event, onRegister, onEdit, onDelete }) {
   return (
-    <div className="bg-gradient-to-br from-gray-900 to-red-950/30 border-2 border-red-500/20 rounded-lg p-6 shadow-lg hover:shadow-red-500/20 transition-all duration-300 hover:scale-105">
+    <div className="bg-gradient-to-br from-gray-900 to-blue-950/30 border-2 border-blue-500/20 rounded-lg p-6 shadow-lg hover:shadow-blue-500/20 transition-all duration-300 hover:scale-105">
       <div className="flex items-start justify-between mb-4">
-        <span className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg shadow-red-500/50">
+        <span className="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full shadow-lg shadow-blue-500/50">
           {event.type}
         </span>
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(event)}
-            className="text-blue-400 hover:text-blue-300 text-sm font-semibold transition-colors"
+            className="text-cyan-400 hover:text-cyan-300 text-sm font-semibold transition-colors"
           >
             Edit
           </button>
           <button
             onClick={() => onDelete(event.id)}
-            className="text-red-400 hover:text-red-300 text-sm font-semibold transition-colors"
+            className="text-purple-400 hover:text-purple-300 text-sm font-semibold transition-colors"
           >
             Delete
           </button>
@@ -126,7 +96,7 @@ function EventCard({ event, onRegister, onEdit, onDelete }) {
       </div>
       <button
         onClick={() => onRegister(event)}
-        className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed shadow-lg shadow-red-500/30 hover:shadow-red-500/50"
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
         disabled={event.attendees >= event.capacity}
       >
         {event.attendees >= event.capacity ? "Event Full" : "Register Now"}
@@ -135,6 +105,7 @@ function EventCard({ event, onRegister, onEdit, onDelete }) {
   );
 }
 
+// Event Modal Component
 function EventModal({ open, onClose, onSubmit, event, mode }) {
   const [formData, setFormData] = useState({
     title: event?.title || "",
@@ -149,9 +120,27 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
     phone: "",
   });
 
+  useEffect(() => {
+    if (event && open) {
+      setFormData({
+        title: event.title || "",
+        description: event.description || "",
+        date: event.date || "",
+        time: event.time || "",
+        venue: event.venue || "",
+        type: event.type || "Technical",
+        capacity: event.capacity || 50,
+        name: "",
+        email: "",
+        phone: "",
+      });
+    }
+  }, [event, open]);
+
   if (!open) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
     onSubmit(formData);
     setFormData({
       title: "",
@@ -169,7 +158,7 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-      <div className="bg-gray-900 border-2 border-red-500/30 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-red-500/20 animate-scaleIn">
+      <div className="bg-gray-900 border-2 border-blue-500/30 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-blue-500/20 animate-scaleIn">
         <h2 className="text-2xl font-bold text-white mb-4">
           {mode === "register"
             ? "Register for Event"
@@ -177,35 +166,38 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
             ? "Edit Event"
             : "Create Event"}
         </h2>
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" ? (
             <>
               <input
                 type="text"
                 placeholder="Your Name"
+                required
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
               />
               <input
                 type="email"
                 placeholder="Email"
+                required
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
               />
               <input
                 type="tel"
                 placeholder="Phone"
+                required
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
               />
             </>
           ) : (
@@ -213,11 +205,12 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
               <input
                 type="text"
                 placeholder="Event Title"
+                required
                 value={formData.title}
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
               />
               <textarea
                 placeholder="Description"
@@ -225,16 +218,17 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
                 rows={3}
               />
               <input
                 type="date"
+                required
                 value={formData.date}
                 onChange={(e) =>
                   setFormData({ ...formData, date: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
               />
               <input
                 type="time"
@@ -242,7 +236,7 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
                 onChange={(e) =>
                   setFormData({ ...formData, time: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
               />
               <input
                 type="text"
@@ -251,14 +245,14 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
                 onChange={(e) =>
                   setFormData({ ...formData, venue: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
               />
               <select
                 value={formData.type}
                 onChange={(e) =>
                   setFormData({ ...formData, type: e.target.value })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
               >
                 {eventTypes
                   .filter((t) => t !== "All")
@@ -271,22 +265,23 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
               <input
                 type="number"
                 placeholder="Capacity"
+                required
                 value={formData.capacity}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    capacity: parseInt(e.target.value),
+                    capacity: parseInt(e.target.value) || 0,
                   })
                 }
-                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-red-500 focus:outline-none transition-colors"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-blue-500 focus:outline-none transition-colors"
                 min="1"
               />
             </>
           )}
           <div className="flex gap-4 pt-2">
             <button
-              onClick={handleSubmit}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-all duration-300 shadow-lg shadow-red-500/30 hover:shadow-red-500/50"
+              type="submit"
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-all duration-300 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
             >
               {mode === "register"
                 ? "Register"
@@ -295,20 +290,24 @@ function EventModal({ open, onClose, onSubmit, event, mode }) {
                 : "Create"}
             </button>
             <button
+              type="button"
               onClick={onClose}
               className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
             >
               Cancel
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
 }
 
 export default function App() {
-  const [events, setEvents] = useState(eventAPI.getAllEvents());
+  const [events, setEvents] = useState(() => {
+    const stored = sampleEvents();
+    return stored;
+  });
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -328,26 +327,41 @@ export default function App() {
 
   const handleSubmitEvent = (data) => {
     if (modalMode === "create") {
-      eventAPI.createEvent(data);
+      const newEvent = {
+        ...data,
+        id: Date.now(),
+        attendees: 0,
+        registeredUsers: [],
+      };
+      setEvents((prev) => [...prev, newEvent]);
     } else if (modalMode === "edit" && selectedEvent) {
-      eventAPI.updateEvent(selectedEvent.id, data);
+      setEvents((prev) =>
+        prev.map((ev) => (ev.id === selectedEvent.id ? { ...ev, ...data } : ev))
+      );
     }
-    setEvents(eventAPI.getAllEvents());
     closeModal();
   };
 
   const handleRegisterAttendee = (data) => {
     if (selectedEvent) {
-      eventAPI.registerAttendee(selectedEvent.id, data);
-      setEvents(eventAPI.getAllEvents());
+      setEvents((prev) =>
+        prev.map((ev) =>
+          ev.id === selectedEvent.id
+            ? {
+                ...ev,
+                attendees: ev.attendees + 1,
+                registeredUsers: [...ev.registeredUsers, data],
+              }
+            : ev
+        )
+      );
       closeModal();
     }
   };
 
   const handleDeleteEvent = (id) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
-      eventAPI.deleteEvent(id);
-      setEvents(eventAPI.getAllEvents());
+      setEvents((prev) => prev.filter((e) => e.id !== id));
     }
   };
 
@@ -371,7 +385,7 @@ export default function App() {
           0%, 100% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
         }
-        @keyframes redPulse {
+        @keyframes colorPulse {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 0.6; }
         }
@@ -384,8 +398,8 @@ export default function App() {
           50% { transform: translateY(-10px); }
         }
         @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
-          50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.6); }
+          0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+          50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
         }
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -398,8 +412,8 @@ export default function App() {
         .animate-gradient-shift {
           animation: gradientShift 15s ease infinite;
         }
-        .animate-red-pulse {
-          animation: redPulse 3s ease-in-out infinite;
+        .animate-color-pulse {
+          animation: colorPulse 3s ease-in-out infinite;
         }
         .animate-lightning {
           animation: lightning 8s ease-in-out infinite;
@@ -416,54 +430,54 @@ export default function App() {
         .animate-scaleIn {
           animation: scaleIn 0.3s ease-out;
         }
-        .shadow-red-glow {
-          box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+        .shadow-color-glow {
+          box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
         }
         .shadow-strong {
-          box-shadow: 0 8px 40px rgba(239, 68, 68, 0.5);
+          box-shadow: 0 8px 40px rgba(59, 130, 246, 0.5);
         }
       `}</style>
-      {/* Animated Background with Red & Black Effects */}
+      {/* Animated Background with Blue, Purple & Cyan Effects */}
       <div className="fixed inset-0 -z-10 bg-black">
         <div
-          className="absolute inset-0 animate-gradient-shift bg-gradient-to-br from-red-900/20 via-black to-red-900/20"
+          className="absolute inset-0 animate-gradient-shift bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-cyan-900/20"
           style={{ backgroundSize: "400% 400%" }}
         />
         <div
-          className="absolute inset-0 animate-red-pulse"
+          className="absolute inset-0 animate-color-pulse"
           style={{
             background:
-              "radial-gradient(circle at 50% 50%, rgba(220, 38, 38, 0.15), transparent 50%)",
+              "radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.15), transparent 50%)",
           }}
         />
         <div
           className="absolute inset-0 animate-lightning"
           style={{
             background:
-              "linear-gradient(to right, transparent 0%, rgba(239, 68, 68, 0.1) 50%, transparent 100%)",
+              "linear-gradient(to right, transparent 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%)",
           }}
         />
       </div>
       {/* Header */}
-      <header className="bg-gradient-to-r from-gray-900 via-red-950 to-gray-900 shadow-red-glow sticky top-0 z-50 border-b-2 border-red-500">
+      <header className="bg-gradient-to-r from-gray-900 via-blue-950 to-gray-900 shadow-color-glow sticky top-0 z-50 border-b-2 border-blue-500">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500 rounded-full flex items-center justify-center text-2xl font-bold shadow-red-glow animate-pulse-glow">
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-500 rounded-full flex items-center justify-center text-2xl font-bold shadow-color-glow animate-pulse-glow">
                 CEC
               </div>
               <div>
                 <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white tracking-wider drop-shadow-lg">
                   CITY ENGINEERING COLLEGE
                 </h1>
-                <p className="text-sm md:text-base font-semibold text-red-400 tracking-widest mt-1">
+                <p className="text-sm md:text-base font-semibold text-blue-400 tracking-widest mt-1">
                   EVENT MANAGEMENT PORTAL
                 </p>
               </div>
             </div>
             <button
               onClick={() => openModal("create")}
-              className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded flex items-center gap-2 shadow-red-glow hover:shadow-strong transition-all duration-300"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center gap-2 shadow-color-glow hover:shadow-strong transition-all duration-300"
             >
               <Plus className="w-5 h-5" />
               CREATE EVENT
@@ -472,21 +486,21 @@ export default function App() {
         </div>
       </header>
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-red-950/50 to-black py-20 md:py-28 border-b-2 border-red-500 relative overflow-hidden">
+      <section className="bg-gradient-to-b from-blue-950/50 to-black py-20 md:py-28 border-b-2 border-blue-500 relative overflow-hidden">
         {/* Additional animated effects */}
         <div
-          className="absolute inset-0 animate-red-pulse"
+          className="absolute inset-0 animate-color-pulse"
           style={{
             background:
-              "radial-gradient(circle at 20% 50%, rgba(239, 68, 68, 0.1), transparent 50%)",
+              "radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1), transparent 50%)",
             animationDelay: "0s",
           }}
         />
         <div
-          className="absolute inset-0 animate-red-pulse"
+          className="absolute inset-0 animate-color-pulse"
           style={{
             background:
-              "radial-gradient(circle at 80% 50%, rgba(239, 68, 68, 0.1), transparent 50%)",
+              "radial-gradient(circle at 80% 50%, rgba(147, 51, 234, 0.1), transparent 50%)",
             animationDelay: "1.5s",
           }}
         />
@@ -495,21 +509,21 @@ export default function App() {
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 animate-float drop-shadow-2xl">
             EMPOWERING FUTURE ENGINEERS
           </h2>
-          <p className="text-xl md:text-2xl text-red-400 font-semibold mb-12 tracking-wide">
+          <p className="text-xl md:text-2xl text-blue-400 font-semibold mb-12 tracking-wide">
             Join us for world-class events, workshops, and seminars
           </p>
 
           {/* Chief Guest Card with Photo */}
-          <div className="inline-flex items-center gap-6 p-8 bg-gradient-to-r from-black/80 via-red-950/50 to-black/80 backdrop-blur-sm border-2 border-red-500/50 rounded-lg max-w-2xl animate-pulse-glow">
+          <div className="inline-flex items-center gap-6 p-8 bg-gradient-to-r from-black/80 via-blue-950/50 to-black/80 backdrop-blur-sm border-2 border-blue-500/50 rounded-lg max-w-2xl animate-pulse-glow">
             <div className="relative">
-              <div className="absolute inset-0 bg-red-500/20 rounded-full blur-xl animate-red-pulse" />
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-4xl font-bold border-4 border-red-400 shadow-red-glow relative z-10">
+              <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl animate-color-pulse" />
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-700 flex items-center justify-center text-4xl font-bold border-4 border-blue-400 shadow-color-glow relative z-10">
                 D
               </div>
               <Award className="w-8 h-8 text-yellow-500 absolute -top-2 -right-2 z-20 drop-shadow-lg" />
             </div>
             <div className="text-left">
-              <p className="text-sm md:text-base text-red-400/90 font-semibold uppercase tracking-wider">
+              <p className="text-sm md:text-base text-blue-400/90 font-semibold uppercase tracking-wider">
                 Chief Guest
               </p>
               <p className="text-3xl md:text-4xl font-black text-white my-2 drop-shadow-lg">
@@ -525,9 +539,9 @@ export default function App() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12 space-y-8">
         {/* Search and Filter */}
-        <div className="bg-gradient-to-br from-gray-900 to-red-950/30 border-2 border-red-500/20 rounded-lg p-6 space-y-4 shadow-red-glow">
-          <div className="flex items-center gap-3 p-3 bg-black/50 rounded-lg border border-red-500/20">
-            <Search className="w-5 h-5 text-red-400" />
+        <div className="bg-gradient-to-br from-gray-900 to-blue-950/30 border-2 border-blue-500/20 rounded-lg p-6 space-y-4 shadow-color-glow">
+          <div className="flex items-center gap-3 p-3 bg-black/50 rounded-lg border border-blue-500/20">
+            <Search className="w-5 h-5 text-blue-400" />
             <input
               placeholder="Search events..."
               value={searchTerm}
@@ -541,8 +555,8 @@ export default function App() {
                 key={type}
                 className={`px-4 py-2 rounded-full font-bold transition-all duration-300 ${
                   filterType === type
-                    ? "bg-red-500 text-white shadow-lg shadow-red-500/50"
-                    : "bg-gray-800 text-gray-300 border border-red-500/30 hover:border-red-500 hover:bg-gray-700"
+                    ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50"
+                    : "bg-gray-800 text-gray-300 border border-blue-500/30 hover:border-blue-500 hover:bg-gray-700"
                 }`}
                 onClick={() => setFilterType(type)}
               >
@@ -554,8 +568,8 @@ export default function App() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-gradient-to-br from-gray-900 to-red-950/30 border-2 border-red-500/20 rounded-lg p-6 flex items-center gap-4 shadow-red-glow hover:shadow-strong transition-all duration-300 hover:scale-105">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-red-glow">
+          <div className="bg-gradient-to-br from-gray-900 to-blue-950/30 border-2 border-blue-500/20 rounded-lg p-6 flex items-center gap-4 shadow-color-glow hover:shadow-strong transition-all duration-300 hover:scale-105">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-color-glow">
               <Calendar className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -566,8 +580,8 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-gray-900 to-red-950/30 border-2 border-red-500/20 rounded-lg p-6 flex items-center gap-4 shadow-red-glow hover:shadow-strong transition-all duration-300 hover:scale-105">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-red-glow">
+          <div className="bg-gradient-to-br from-gray-900 to-blue-950/30 border-2 border-blue-500/20 rounded-lg p-6 flex items-center gap-4 shadow-color-glow hover:shadow-strong transition-all duration-300 hover:scale-105">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-color-glow">
               <Users className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -578,8 +592,8 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-gray-900 to-red-950/30 border-2 border-red-500/20 rounded-lg p-6 flex items-center gap-4 shadow-red-glow hover:shadow-strong transition-all duration-300 hover:scale-105">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-red-glow">
+          <div className="bg-gradient-to-br from-gray-900 to-blue-950/30 border-2 border-blue-500/20 rounded-lg p-6 flex items-center gap-4 shadow-color-glow hover:shadow-strong transition-all duration-300 hover:scale-105">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-color-glow">
               <Clock className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -605,7 +619,7 @@ export default function App() {
         </div>
 
         {filteredEvents.length === 0 && (
-          <div className="bg-gradient-to-br from-gray-900 to-red-950/30 border-2 border-red-500/20 rounded-lg p-12 text-center shadow-red-glow">
+          <div className="bg-gradient-to-br from-gray-900 to-blue-950/30 border-2 border-blue-500/20 rounded-lg p-12 text-center shadow-color-glow">
             <p className="text-gray-400 text-lg">
               No events found matching your criteria
             </p>
@@ -613,7 +627,7 @@ export default function App() {
         )}
       </main>
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-gray-900 via-red-950 to-gray-900 mt-20 border-t-2 border-red-500">
+      <footer className="bg-gradient-to-r from-gray-900 via-blue-950 to-gray-900 mt-20 border-t-2 border-blue-500">
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
             <div>
@@ -645,13 +659,13 @@ export default function App() {
             <div>
               <h4 className="text-lg font-bold mb-4">Quick Links</h4>
               <div className="space-y-2 text-sm">
-                <p className="cursor-pointer hover:underline hover:text-red-400 transition-colors">
+                <p className="cursor-pointer hover:underline hover:text-blue-400 transition-colors">
                   About Us
                 </p>
-                <p className="cursor-pointer hover:underline hover:text-red-400 transition-colors">
+                <p className="cursor-pointer hover:underline hover:text-blue-400 transition-colors">
                   Departments
                 </p>
-                <p className="cursor-pointer hover:underline hover:text-red-400 transition-colors">
+                <p className="cursor-pointer hover:underline hover:text-blue-400 transition-colors">
                   Admissions
                 </p>
               </div>
